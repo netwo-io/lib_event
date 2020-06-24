@@ -1,13 +1,13 @@
-===  Event recording for auditability
+==  Event recording for auditability for PostgreSQL (PL/pgSQL)
 
 
-==== Features
+=== Features
 
-- unrestricted event name
-- user-defined headers
-- handles payload of any-size
+- [x] unrestricted event name
+- [x] user-defined headers
+- [x] handles payload of any-size
 
-==== Convention
+=== Convention
 
 An `event` is something that has happened. In the past.
 
@@ -19,77 +19,25 @@ Examples:
 - `billing.invoice.paid`
 
 
--- (function) create a new event (event_id), insert it (table lib_event.event) and trigger a pg_notify("lib_event.created", event_id)
+=== Usage
 
--- e.g. lib_events.create("iam.user.created", payload jsonb, ...)
+=== API
 
--- pg_notify limits payload to 8000 bytes so lib_event only contains the event_id that can then be retrieved with
+(function) create a new event (event_id), insert it (table lib_event.event) and trigger a pg_notify("lib_event.created", event_id)
 
-"select * from lib_events.events where event__id = XXXX"
+```
+lib_events.create("iam.user.created", payload jsonb, ...)
+```
 
+pg_notify limits payload to 8000 bytes so lib_event only contains the event_id that can then be retrieved with
 
-
--- event type: <service>.<resource|resourceType>.<verb>
-
--- will be present in event header
-
-event_type text,
-
--- records the time at which the event occured in the external system
-
--- will be present in event header
-occurred_at timestamptz default now(),
+```
+select * from lib_events.events where event__id = XXXX
+```
 
 
+(view) public access to one or more events
 
--- records the time at which the event became known to the event processing system
-
--- will be present in event header
-created_at timestamptz default now(),
-
-
-
--- the name of the entity that originated this event. Can be either an event producer or an event processing agent.
-
--- could be request the request id `request.id()` or null if automatic
-
--- will be present in event header
-source uuid null,
-
-
-
--- user-defined headers, e.g. "actor", "auth level", ...
-
--- header will contain at least: event_type, event__id, created_at, occurred_at, source, partition_key
-headers jsonb default '{}',
-
--- event content
-payload jsonb)
-
-
-
-### Implémentation
-
-Clé unique & index: event__id uuid
-
-
-
-### (view) public access to one or more events
-
-lib_events.events(event__id uuid,  headers jsonb, payload jsonb)
-
-
-
--- Performance optimization
-
-Bring your own partitioning scheme
-
-
-
--- Steps
-
-
-
-1/ use PostgreSQL for everything
-
-2/ we will see what we do (another postgresql & postgrest + lib_amqp? an elasticsearch cluster?), depending on the workfload & usage
+```
+select event__id, headers, payload from lib_events.events;
+```
