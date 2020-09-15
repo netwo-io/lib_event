@@ -6,7 +6,9 @@ begin
   begin
     perform lib_event.create(null);
   exception
-    when not_null_violation then return;
+    when not_null_violation then
+      perform lib_test.assert_equal(sqlerrm, 'null value in column "event_type" violates not-null constraint');
+      return;
   end;
   perform lib_test.fail('should not go there');
 end;
